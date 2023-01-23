@@ -24,7 +24,7 @@ param (
     [String] $TenantId,
 
     [Parameter (Mandatory = $true)]
-    [String] $ApplicationId
+    [String] $applicationId
 )
 
 $ErrorActionPreference = "Stop"
@@ -91,17 +91,17 @@ $headers = @{
 }
 
 # Retrieve application
-Write-Host "  ┖─ Retrieving application with appId $($ApplicationId)..." -ForegroundColor DarkGray
+Write-Host "  ┖─ Retrieving application with appId $($applicationId)..." -ForegroundColor DarkGray
 $params = @{
     "Method"  = "Get"
-    "Uri"     = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$($ApplicationId)'"
+    "Uri"     = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$($applicationId)'"
     "Headers" = $headers
 }
 $applications = Invoke-RestMethod @params -UseBasicParsing
 
 # Validate application found
 if ($applications.value.Count -ne 1) {
-    Write-Error "Found $($applications.value.Count) applications with appId '$($ApplicationId)'"
+    Write-Error "Found $($applications.value.Count) applications with appId '$($applicationId)'"
 }
 # Retrieve application details
 $params = @{
@@ -129,7 +129,7 @@ foreach($owner in $applicationOwners.value) {
 Write-Host "  ┖─ Retrieving associated Service Principal..." -ForegroundColor DarkGray
 $params = @{
     "Method"  = "Get"
-    "Uri"     = "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '$($ApplicationId)'"
+    "Uri"     = "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '$($applicationId)'"
     "Headers" = $headers
 }
 $servicePrincipals = Invoke-RestMethod @params -UseBasicParsing
