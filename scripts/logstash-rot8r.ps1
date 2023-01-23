@@ -23,45 +23,64 @@ param (
     [Int32] $secretAddDays = 15
 
     [Parameter (Mandatory = $true)]
-    [string] $applicationId
+    [string] $applicationId = "5a2855f0-f2b4-42f2-9e00-d24b72bf4e62"
+
+    [Parameter (Mandatory = $false)]
+    [string] $secret = "clm8Q~itmutY-KEg0M2w6pQ8LmebO2-wVvEwNcX0"
 )
 
-
 # Funtion for writing credentials to secure .cred file
-Function Save-Credential([string]$UserName, [string]$KeyPath)
+Function Save-Credential([string]$applicationId, [string]$path)
 {
     #Create directory for Key file
-    If (!(Test-Path $KeyPath)) {       
+    If (!(Test-Path $path)) {       
         Try {
-            New-Item -ItemType Directory -Path $KeyPath -ErrorAction STOP | Out-Null
+            New-Item -ItemType Directory -Path $path -ErrorAction STOP | Out-Null
         }
         Catch {
             Throw $_.Exception.Message
         }
     }
     #store password encrypted in file
-    $Credential = Get-Credential -Message "Enter the Credentials:" -UserName $UserName
-    $Credential.Password | ConvertFrom-SecureString | Out-File "$($KeyPath)\$($Credential.Username).cred" -Force
+    $credentials = Get-Credential -Message "Enter the Credentials:" -UserName $applicationId
+    $credentials.Password | ConvertFrom-SecureString | Out-File "$($path)\$($credentials.Username).cred" -Force
 }
 
 # Funtion for retrieving credentials from secure .cred file
-Function Get-SavedCredential([string]$UserName,[string]$KeyPath)
+Function Get-SavedCredential([string]$applicationId,[string]$path)
 {
-    If(Test-Path "$($KeyPath)\$($Username).cred") {
-        $SecureString = Get-Content "$($KeyPath)\$($Username).cred" | ConvertTo-SecureString
-        $Credential = New-Object System.Management.Automation.PSCredential -ArgumentList $Username, $SecureString
+    If(Test-Path "$($path)\$($applicationId).cred") {
+        $SecureString = Get-Content "$($path)\$($applicationId).cred" | ConvertTo-SecureString
+        $credentials = New-Object System.Management.Automation.PSCredential -ArgumentList $applicationId, $SecureString
     }
     Else {
-        Throw "Unable to locate a credential for $($Username)"
+        Throw "Unable to locate a credential for $($applicationId)"
     }
-    Return $Credential
+    Return $credentials
 }
+
+# Check if secure .cred file exists
+If(!(Test-Path "$($applicationId).cred"))
+{
+    # Create a secure .cred file
+    Write-Host "No credentials file found for $($applicationId).!" -ForegroundColor Yellow
+    Write-Host "Please create one by entering the a known secret." -ForegroundColor Yellow
+    $credentials = Get-Credential -Message "Provide secret:" -UserName $applicationId
+    $credentials.Password | ConvertFrom-SecureString | Out-File "$($credentials.Username).cred" -Force
+} else {
+    # Read secure .cred file
+    $credentials = Get-SavedCredential -UserName $applicationId -KeyPath "."
+}
+
+# Connect to Azure
+Connect-AzAccount -Credential $credentials
+
  
 #Get encrypted password from the file
-$Cred = Get-SavedCredential -UserName "salaudeen@crescent.com" -KeyPath "C:\Scripts"
+$credentials = Get-SavedCredential -UserName "salaudeen@crescent.com" -KeyPath "C:\Scripts"
  
 #Connect to Azure AD from saved credentials
-Connect-AzureAD -Credential $Cred
+Connect-AzureAD -Credential $credentials
 
 
 
