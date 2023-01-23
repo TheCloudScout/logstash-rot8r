@@ -23,43 +23,19 @@ param (
     [Int32] $secretAddDays = 15
 
     [Parameter (Mandatory = $true)]
+    [string] $tenantId = "da2d1fdd-f4f7-4483-960e-9742e3742ef4"
+
+    [Parameter (Mandatory = $true)]
     [string] $applicationId = "5a2855f0-f2b4-42f2-9e00-d24b72bf4e62"
 
     [Parameter (Mandatory = $false)]
     [string] $secret = "clm8Q~itmutY-KEg0M2w6pQ8LmebO2-wVvEwNcX0"
 )
 
-# Funtion for writing credentials to secure .cred file
-Function Save-Credential([string]$applicationId, [string]$path)
-{
-    #Create directory for Key file
-    If (!(Test-Path $path)) {       
-        Try {
-            New-Item -ItemType Directory -Path $path -ErrorAction STOP | Out-Null
-        }
-        Catch {
-            Throw $_.Exception.Message
-        }
-    }
-    #store password encrypted in file
-    $credentials = Get-Credential -Message "Enter the Credentials:" -UserName $applicationId
-    $credentials.Password | ConvertFrom-SecureString | Out-File "$($path)\$($credentials.Username).cred" -Force
-}
+$ErrorActionPreference = "Stop"
+Set-StrictMode -Version Latest
 
-# Funtion for retrieving credentials from secure .cred file
-Function Get-SavedCredential([string]$applicationId,[string]$path)
-{
-    If(Test-Path "$($path)\$($applicationId).cred") {
-        $SecureString = Get-Content "$($path)\$($applicationId).cred" | ConvertTo-SecureString
-        $credentials = New-Object System.Management.Automation.PSCredential -ArgumentList $applicationId, $SecureString
-    }
-    Else {
-        Throw "Unable to locate a credential for $($applicationId)"
-    }
-    Return $credentials
-}
-
-# Check if secure .cred file exists
+# Check if secure .cred file exists and construct $credentials
 If(!(Test-Path "$($applicationId).cred"))
 {
     # Create a secure .cred file
@@ -69,51 +45,16 @@ If(!(Test-Path "$($applicationId).cred"))
     $credentials.Password | ConvertFrom-SecureString | Out-File "$($credentials.Username).cred" -Force
 } else {
     # Read secure .cred file
-    $credentials = Get-SavedCredential -UserName $applicationId -KeyPath "."
+    $SecureString = Get-Content "$($applicationId).cred" | ConvertTo-SecureString
+    $credentials = New-Object System.Management.Automation.PSCredential -ArgumentList $applicationId, $SecureString
 }
 
-# Connect to Azure
-Connect-AzAccount -Credential $credentials
-
- 
-#Get encrypted password from the file
-$credentials = Get-SavedCredential -UserName "salaudeen@crescent.com" -KeyPath "C:\Scripts"
- 
-#Connect to Azure AD from saved credentials
-Connect-AzureAD -Credential $credentials
+# Login to Azure with service principal details from $credentials
+Add-AzAccount -Credential $credentials -TenantId $tenantId -ServicePrincipal
 
 
 
 
-
-
-$secret = "clm8Q~itmutY-KEg0M2w6pQ8LmebO2-wVvEwNcX0"
-$appid = "5a2855f0-f2b4-42f2-9e00-d24b72bf4e62"
-
-
-
-Get-Content file.txt | Foreach-Object{
-   $var = $_.Split('=')
-   New-Variable -Name $var[0] -Value $var[1]
-}
-
-\\\
-$credentials = [ordered]@{
-    tenantId            = [System.Text.ASCIIEncoding]::ASCII.GetString([System.Convert]::FromBase64String(" YTZiMTY5ZjEtNTkyYi00MzI5LThmMzMtOGRiODkwMzAwM2M3 "))
-    serviceprincipalId  = [System.Text.ASCIIEncoding]::ASCII.GetString([System.Convert]::FromBase64String(" MzExZjRiYjYtYjgwMS00ZDYyLWEwZTAtMWU5MGJmMzEzYmVk "))
-    servicePrincipalKey = [System.Text.ASCIIEncoding]::ASCII.GetString([System.Convert]::FromBase64String(" Q3I2OFF+R2xNbld6TWROeHhqUS1faVR4alNldkx5U1R5Q0t0R2RBMw== "))
-}
-Write-Output -InputObject $credentials
-
- $psCred = New-Object System.Management.Automation.PSCredential($credentials.serviceprincipalId , (ConvertTo-SecureString $credentials.servicePrincipalKey -AsPlainText -Force))
- Add-AzAccount -Credential $psCred -TenantId $credentials.tenantId -ServicePrincipal
-\\\
-
-
-
-
-$ErrorActionPreference = "Stop"
-Set-StrictMode -Version Latest
 
 $accessToken = [System.Environment]::GetEnvironmentVariable("SYSTEM_ACCESSTOKEN")
 if ([System.String]::IsNullOrWhiteSpace($accessToken)) {
