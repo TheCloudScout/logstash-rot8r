@@ -113,8 +113,13 @@ $logstashConfigFile = Get-Content $sourceFile
 # Cleanup and keep only relevant config
 $logstashConfig = ($logstashConfigFile | Where-Object { $_ -match $Pattern }).trim() -Replace ' => ','=' -Replace '"','' | ConvertFrom-StringData
 # Replace application secret in Logstash config file
-$logstashConfigFile.replace($($logstashConfig.clientappsecret),$($newSecret.secretText)) | Out-File $sourceFile
-Write-Host "Logstash config file $($sourceFile) written." -ForegroundColor DarkGray
+try {
+    $logstashConfigFile.replace($($logstashConfig.clientappsecret),$($newSecret.secretText)) | Out-File $sourceFile
+    Write-Host "     ✓ Logstash config file $($sourceFile) written." -ForegroundColor Green
+} catch {
+    Write-Host "     ✘ There was a problem updating Logstash config file" -ForegroundColor Red
+}
+
 
 # Cleanup old secrets
 # Retrieve updated application
