@@ -99,9 +99,25 @@ $params = @{
 $newSecret = Invoke-RestMethod @params -UseBasicParsing
 Write-Host "New secret created with id: $($newSecret.keyId)"
 
+Write-Host "Updating secure .cred file..." -ForegroundColor DarkGray
+# Update secure .cred file with new secret value
 $secureNewSecret = ConvertTo-SecureString $newSecret.secretText -AsPlainText -Force
 $secureNewSecret | ConvertFrom-SecureString | Out-File "$($credentials.Username).cred" -Force
 
+# Update Logstash configuration with new secret value
+Write-Host "Updating logstash config file $($sourceFile)..." -ForegroundColor DarkGray
+$sourceFile = './logstash.conf'
+$Pattern = ' => '
+# Read Logstash config file
+$logstashConfigFile = Get-Content $sourceFile
+# Cleanup and keep only relevant config
+$logstashConfig = ($logstashConfigFile | Where-Object { $_ -match $Pattern }).trim() -Replace ' => ','=' -Replace '"','' | ConvertFrom-StringData
+Start-Sleep -Seconds 5
+# Replace application secret in Logstash config file
+$logstashConfigFile.replace($logstashConfig.client_app_secret,$newSecret.secretText) | Out-File $sourceFile
+Write-Host "Logstash config file $($sourceFile) written." -ForegroundColor DarkGray
+
+# Cleanup old secrets
 # Retrieve updated application
 $params = @{
     "Method"  = "Get"
@@ -110,7 +126,7 @@ $params = @{
 }
 $application = Invoke-RestMethod @params -UseBasicParsing
 
-# Remove old application secrets
+# Remove old application secrets, keep only newest +1
 $passwordsToRemove = $application.passwordCredentials | Where-Object -FilterScript { $_.keyId -ne $newSecret.keyId } | Sort-Object -Property startDateTime -Descending | Select-Object -Skip 1
 Write-Host "Found $(@($passwordsToRemove).Count) application secrets to remove"
 foreach ($passwordToRemove in $passwordsToRemove) {
