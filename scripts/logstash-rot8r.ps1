@@ -208,7 +208,7 @@ foreach ($secretToRemove in $passwordsToRemove) {
 
 # Restart Logstash system service
 Write-Host ""
-Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkGreen
+Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkYellow
 
 # & systemctl restart logstash # Will obviously not work on non-Linux machine without Logstash
 
