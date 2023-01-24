@@ -1,20 +1,24 @@
 <#
 .DESCRIPTION
     Permission requirements:
-    - Azure AD: Application needs to be owner of it's own application
-    - Azure AD: Application requires the application permission Application.ReadWrite.OwnedBy
+    - Azure AD: Application needs to be owner of it's own application.
+    - Azure AD: Application requires the application permission Application.ReadWrite.OwnedBy.
 
-    https://docs.microsoft.com/en-us/rest/api/azure/devops/serviceendpoint/endpoints?view=azure-devops-rest-6.1
+    Run Add-AppOwner.ps1 separately for one-time setup of proper permissions on your application.
+
     https://docs.microsoft.com/en-us/graph/api/resources/application?view-graph-rest-1.0
 
     .PARAMETER secretAddDays [Int32]
-    The number of days the new application secret will be valid. Default is for 15 days.
+    The number of days the new application secret will be valid. Default is for 31 days.
     .PARAMETER tenantId [string]
     The Tenant ID of the Azure Active Directory in which the application resides.
     .PARAMETER applicationId [string]
     The app id of the application on which the secret needs to be rotated.
+    .PARAMETER logstashConfigLocation [string]
+    Path to logstash pipeline configuration file i.e. '/etc/logstash/conf.d/syslog-to-dcr-based-sentinel.conf'.
 
 #>
+
 [CmdletBinding()]
 param (
     [Parameter (Mandatory = $false)]
@@ -202,8 +206,15 @@ foreach ($passwordToRemove in $passwordsToRemove) {
         Write-Host "               ✘ Failed to remove password with status code $($removedPassword.StatusCode)" -ForegroundColor Orange
     }
 }
+
+# Restart Logstash system service
 Write-Host ""
-Write-Host "              ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑   " -ForegroundColor Green
-Write-Host "           ━━━┥  🔑 Key rotation successful!  ┝━━━" -ForegroundColor Green
-Write-Host "              ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙   " -ForegroundColor Green
+Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkGreen
+
+& systemctl restart logstash # Will obviously not work on non-Linux machine without Logstash
+
+Write-Host ""
+Write-Host "      ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑  " -ForegroundColor Green
+Write-Host "    ━━┥  🔑 Key rotation successful!  ┝━━" -ForegroundColor Green
+Write-Host "      ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙  " -ForegroundColor Green
 Write-Host ""
