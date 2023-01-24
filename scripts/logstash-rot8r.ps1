@@ -111,17 +111,22 @@ $Pattern = ' => '
 # Read Logstash config file
 $logstashConfigFile = Get-Content $sourceFile
 # Cleanup and keep only relevant config
-$logstashConfig = (($logstashConfigFile | Where-Object { $_ -match $Pattern }) -Replace ' => ','=' -Replace '"','').trim() | ConvertFrom-StringData
+$logstashCleanConfigFile = ($logstashConfigFile | Where-Object { $_ -match $Pattern }).trim() -Replace '"',''
+# Add configuration items to hashtable
+$logstashConfig = @{}
+foreach($line in $logstashCleanConfigFile){
+    $arr = $line.Split('=>').trim()
+    $logstashConfig.Add($arr[0], $arr[1])
+}
 # Replace application secret in Logstash config file
-# try {
-    $logstashConfigFile = $logstashConfigFile -replace $($logstashConfig.client_app_secret), $($newSecret.secretText)
+try {
+    $logstashConfigFile = $logstashConfigFile -replace $logstashConfig.client_app_secret, $newSecret.secretText
     Write-Host "Variable updated" -ForegroundColor Green
     $logstashConfigfile | Out-File $sourceFile
-    # $logstashConfigFile.replace($($logstashConfig.client_app_secret),$($newSecret.secretText)) | Out-File $sourceFile
     Write-Host "     ✓ Logstash config file $($sourceFile) written." -ForegroundColor Green
-# } catch {
-#     Write-Host "     ✘ There was a problem updating Logstash config file $($sourceFile)." -ForegroundColor Red
-# }
+} catch {
+    Write-Host "     ✘ There was a problem updating Logstash config file $($sourceFile)." -ForegroundColor Red
+}
 
 # Cleanup old secrets
 # Retrieve updated application
