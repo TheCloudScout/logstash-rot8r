@@ -65,7 +65,7 @@ $params = @{
     }
 }
 
-# Wait for successfull authentication
+# Wait for  authentication
 $timeoutTimer = [System.Diagnostics.Stopwatch]::StartNew()
 do {
     Start-Sleep -Seconds 1
@@ -229,6 +229,7 @@ else {
 # Validate if already owner
 if ($null -ne ($applicationOwners.value | Where-Object -FilterScript { $_.id -eq $servicePrincipalId })) {
     Write-Host "     ! Application already owner of itself" -ForegroundColor Yellow
+    Write-Host ""
     return
 }
 # Add Service Principal as Owner of the Application
