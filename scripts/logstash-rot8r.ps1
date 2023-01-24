@@ -30,6 +30,19 @@ param (
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+Write-Host ""
+Write-Host "         ┐    ┌─┐  ┌─┐  ┌─┐  ─┬─  ┌─┐  ┌─┐  ┐ ┌            " -ForegroundColor Magenta
+Write-Host "         │    │ │  │ ┬  └─┐   │   ├─┤  └─┐  ├─┤            " -ForegroundColor Magenta
+Write-Host "         └─┘  └─┘  └─┘  └─┘   ┴   ┘ └  └─┘  ┘ └            " -ForegroundColor Magenta
+Write-Host ":::::::::    ::::::::  :::::::::::  ::::::::   :::::::::   " -ForegroundColor Magenta
+Write-Host ":+:    :+:  :+:    :+:     :+:     :+:    :+:  :+:    :+:  " -ForegroundColor Magenta
+Write-Host "+:+    +:+  +:+    +:+     +:+     +:+    +:+  +:+    +:+  " -ForegroundColor Magenta
+Write-Host "+#++:++#:   +#+    +:+     +#+      +#++:++#   +#++:++#:   " -ForegroundColor Magenta
+Write-Host "+#+    +#+  +#+    +#+     +#+     +#+    +#+  +#+    +#+  " -ForegroundColor Magenta
+Write-Host "#+#    #+#  #+#    #+#     #+#     #+#    #+#  #+#    #+#  " -ForegroundColor Magenta
+Write-Host "###    ###   ########      ###      ########   ###    ###  " -ForegroundColor Magenta
+Write-Host ""
+
 # Check if secure .cred file exists and construct $credentials
 If(!(Test-Path "$($applicationId).cred"))
 {
