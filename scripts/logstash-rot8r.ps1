@@ -116,7 +116,6 @@ try {
     Write-Host ""
     exit
 }
-
 if ($applications.value.Count -ne 1) {
     Write-Host "          ✘ No application found with appId '$($applicationId)'" -ForegroundColor Red
 } else {
@@ -188,10 +187,10 @@ $application = Invoke-RestMethod @params -UseBasicParsing
 Write-Host "       ┖─ Looking for outdated secrets that can be cleaned up..." -ForegroundColor DarkGray
 $passwordsToRemove = $application.passwordCredentials | Where-Object -FilterScript { $_.keyId -ne $newSecret.keyId } | Sort-Object -Property startDateTime -Descending | Select-Object -Skip 1
 Write-Host "           ┖─ Found $(@($passwordsToRemove).Count) application secret(s) to remove" -ForegroundColor DarkGray
-foreach ($passwordToRemove in $passwordsToRemove) {
-    Write-Host "           ┖─ Remove application secret '$($passwordToRemove.displayName)' with start date '$($passwordToRemove.startDateTime)' and end date '$($passwordToRemove.endDateTime)'" -ForegroundColor DarkGray
+foreach ($secretToRemove in $passwordsToRemove) {
+    Write-Host "           ┖─ Remove application secret '$($secretToRemove.displayName)' with start date '$($secretToRemove.startDateTime)' and end date '$($secretToRemove.endDateTime)'" -ForegroundColor DarkGray
     $body = @{
-        "keyId" = $passwordToRemove.keyId
+        "keyId" = $secretToRemove.keyId
     }
     $params = @{
         "Method"  = "Post"
@@ -199,11 +198,11 @@ foreach ($passwordToRemove in $passwordsToRemove) {
         "Headers" = $headers
         "Body"    = $body | ConvertTo-Json -Compress
     }
-    $removedPassword = Invoke-WebRequest @params -UseBasicParsing
-    if ($removedPassword.StatusCode -eq 204) {
+    $removedSecret = Invoke-WebRequest @params -UseBasicParsing
+    if ($removedSecret.StatusCode -eq 204) {
         Write-Host "               ✓ Removed application secret" -ForegroundColor Green
     } else {
-        Write-Host "               ✘ Failed to remove password with status code $($removedPassword.StatusCode)" -ForegroundColor Orange
+        Write-Host "               ✘ Failed to remove password with status code $($removedSecret.StatusCode)" -ForegroundColor Orange
     }
 }
 
@@ -211,7 +210,7 @@ foreach ($passwordToRemove in $passwordsToRemove) {
 Write-Host ""
 Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkGreen
 
-& systemctl restart logstash # Will obviously not work on non-Linux machine without Logstash
+# & systemctl restart logstash # Will obviously not work on non-Linux machine without Logstash
 
 Write-Host ""
 Write-Host "      ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑  " -ForegroundColor Green
