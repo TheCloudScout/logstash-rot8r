@@ -21,35 +21,46 @@ param (
     [Int32] $secretAddDays = 31,
 
     [Parameter (Mandatory = $true)]
-    [string] $tenantId = "da2d1fdd-f4f7-4483-960e-9742e3742ef4",
+    [string] $tenantId,
 
     [Parameter (Mandatory = $true)]
-    [string] $applicationId = "5a2855f0-f2b4-42f2-9e00-d24b72bf4e62"
+    [string] $applicationId,
+
+    [Parameter (Mandatory = $true)]
+    [string] $logstashConfigLocation
 )
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 Write-Host ""
-Write-Host "         ┐    ┌─┐  ┌─┐  ┌─┐  ─┬─  ┌─┐  ┌─┐  ┐ ┌            " -ForegroundColor Magenta
-Write-Host "         │    │ │  │ ┬  └─┐   │   ├─┤  └─┐  ├─┤            " -ForegroundColor Magenta
-Write-Host "         └─┘  └─┘  └─┘  └─┘   ┴   ┘ └  └─┘  ┘ └            " -ForegroundColor Magenta
-Write-Host ":::::::::    ::::::::  :::::::::::  ::::::::   :::::::::   " -ForegroundColor Magenta
-Write-Host ":+:    :+:  :+:    :+:     :+:     :+:    :+:  :+:    :+:  " -ForegroundColor Magenta
-Write-Host "+:+    +:+  +:+    +:+     +:+     +:+    +:+  +:+    +:+  " -ForegroundColor Magenta
-Write-Host "+#++:++#:   +#+    +:+     +#+      +#++:++#   +#++:++#:   " -ForegroundColor Magenta
-Write-Host "+#+    +#+  +#+    +#+     +#+     +#+    +#+  +#+    +#+  " -ForegroundColor Magenta
-Write-Host "#+#    #+#  #+#    #+#     #+#     #+#    #+#  #+#    #+#  " -ForegroundColor Magenta
-Write-Host "###    ###   ########      ###      ########   ###    ###  " -ForegroundColor Magenta
-Write-Host ""
+Write-Host "            ┐    ┌─┐  ┌─┐  ┌─┐  ─┬─  ┌─┐  ┌─┐  ┐ ┌             " -ForegroundColor Magenta
+Write-Host "            │    │ │  │ ┬  └─┐   │   ├─┤  └─┐  ├─┤             " -ForegroundColor Magenta
+Write-Host "            └─┘  └─┘  └─┘  └─┘   ┴   ┘ └  └─┘  ┘ └             " -ForegroundColor Magenta
+Write-Host "   :::::::::    ::::::::  :::::::::::  ::::::::   :::::::::    " -ForegroundColor Magenta
+Write-Host "   :+:    :+:  :+:    :+:     :+:     :+:    :+:  :+:    :+:   " -ForegroundColor Magenta
+Write-Host "   +:+    +:+  +:+    +:+     +:+     +:+    +:+  +:+    +:+   " -ForegroundColor Magenta
+Write-Host "   +#++:++#:   +#+    +:+     +#+      +#++:++#   +#++:++#:    " -ForegroundColor Magenta
+Write-Host "   +#+    +#+  +#+    +#+     +#+     +#+    +#+  +#+    +#+   " -ForegroundColor Magenta
+Write-Host "   #+#    #+#  #+#    #+#     #+#     #+#    #+#  #+#    #+#   " -ForegroundColor Magenta
+Write-Host "   ###    ###   ########      ###      ########   ###    ###   " -ForegroundColor Magenta
+Write-Host "╙─────────────────────────────────────────────────────────────╜" -ForegroundColor Magenta
+
+# Check if Logstash config file can be found
+If(!(Test-Path $logstashConfigLocation))
+{
+    Write-Host " ✘ Logstash configuration file $($logstashConfigLocation) not found!" -ForegroundColor Red
+    Write-Host ""
+    exit
+}
 
 # Check if secure .cred file exists and construct $credentials
 If(!(Test-Path "$($applicationId).cred"))
 {
     # Create a secure .cred file
-    Write-Host "No credentials file found for $($applicationId).!" -ForegroundColor Yellow
-    Write-Host "Please create one by entering the a known secret." -ForegroundColor Yellow
-    $credentials = Get-Credential -Message "Provide secret." -UserName $applicationId
+    Write-Host "No credentials file found for $($applicationId)!" -ForegroundColor Yellow
+    # Write-Host "Please create one by entering the a known secret." -ForegroundColor Yellow
+    $credentials = Get-Credential -Message " " -Title "Please create one by entering a known secret." -UserName $applicationId
     $credentials.Password | ConvertFrom-SecureString | Out-File "$($credentials.Username).cred" -Force
 } else {
     # Read secure .cred file
@@ -57,6 +68,8 @@ If(!(Test-Path "$($applicationId).cred"))
     $credentials = New-Object System.Management.Automation.PSCredential -ArgumentList $applicationId, $SecureString
 }
 
+# Sign in to Azure Active Directory
+Write-Host "   ▲ Connecting to Azure Active Directory..." -ForegroundColor Cyan 
 $params = @{
     "Method" = "Post"
     "Uri"    = "https://login.microsoftonline.com/$($tenantId)/oauth2/token"
@@ -67,7 +80,15 @@ $params = @{
         "resource"      = "https://graph.microsoft.com/"
     }
 }
-$token = Invoke-RestMethod @params -UseBasicParsing
+try {
+    $token = Invoke-RestMethod @params -UseBasicParsing
+} catch {
+    Write-Host ""
+    Write-Host "   ✘ There was a problem signing in to Azure Active Directory!" -ForegroundColor Red
+    Write-Host "     Verify credentials, remove $($applicationId).cred file and try again." -ForegroundColor Red
+    Write-Host ""
+    exit
+}
 
 $headers = @{
     "Content-Type"  = "application/json"
@@ -75,14 +96,25 @@ $headers = @{
 }
 
 # Retrieve application
+Write-Host "      ─┰─ " -ForegroundColor DarkGray
+Write-Host "       ┖─ Retrieving application details..." -ForegroundColor DarkGray
 $params = @{
     "Method"  = "Get"
     "Uri"     = "https://graph.microsoft.com/v1.0/applications?`$filter=appId eq '$($applicationId)'"
     "Headers" = $headers
 }
-$applications = Invoke-RestMethod @params -UseBasicParsing
+try {
+    $applications = Invoke-RestMethod @params -UseBasicParsing
+} catch {
+    Write-Host ""
+    Write-Host "        ✘ There was a problem retrieving application with id $($applicationId) in Azure Active Directory!" -ForegroundColor Red
+    Write-Host "          Please verify permissions requirements and re-run 'Add-AppOwner.ps1' is necessary." -ForegroundColor Red
+    Write-Host ""
+    exit
+}
+
 if ($applications.value.Count -ne 1) {
-    Write-Error "No application found with appId '$($applicationId)' which shouldn't be possible."
+    Write-Host "          ✘ No application found with appId '$($applicationId)'" -ForegroundColor Red
 } else {
     $params = @{
         "Method"  = "Get"
@@ -90,19 +122,18 @@ if ($applications.value.Count -ne 1) {
         "Headers" = $headers
     }
     $application = Invoke-RestMethod @params -UseBasicParsing
-    Write-Host "Found application with id '$($application.id)', appId '$($application.appId)' and displayName '$($application.displayName)'"
+    Write-Host "           ✓ Found application with id '$($application.id)', appId '$($application.appId)' and displayName '$($application.displayName)'" -ForegroundColor Green
 }
 
 # Add new application secret
+Write-Host "       ┖─ Generating new secret with a lifetime of $($secretAddDays) days..." -ForegroundColor DarkGray
+# Constructing body with displayName and endDateTime
 $body = @{
     "passwordCredential" = @{
         "displayName" = "secret-$(Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ" -AsUTC)"
         "endDateTime" = (Get-Date).AddDays($secretAddDays) | Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ" -AsUTC
     }
 }
-Write-Host "Add new secret with the following displayName and endDateTime:"
-Write-Host $body.passwordCredential.displayName
-Write-Host $body.passwordCredential.endDateTime
 $params = @{
     "Method"  = "Post"
     "Uri"     = "https://graph.microsoft.com/v1.0/applications/$($application.id)/addPassword"
@@ -110,19 +141,19 @@ $params = @{
     "Body"    = $body | ConvertTo-Json -Compress
 }
 $newSecret = Invoke-RestMethod @params -UseBasicParsing
-Write-Host "New secret created with id: $($newSecret.keyId)"
+Write-Host "           ✓ New secret created with id $($newSecret.keyId), displayName $($body.passwordCredential.displayName) and endDateTime of $($body.passwordCredential.endDateTime)" -ForegroundColor Green
 
-Write-Host "Updating secure .cred file..." -ForegroundColor DarkGray
+Write-Host "       ┖─ Updating secure .cred file for next rotation..." -ForegroundColor DarkGray
 # Update secure .cred file with new secret value
 $secureNewSecret = ConvertTo-SecureString $newSecret.secretText -AsPlainText -Force
 $secureNewSecret | ConvertFrom-SecureString | Out-File "$($credentials.Username).cred" -Force
+Write-Host "           ✓ Credentials encrypted and stored in $($applicationId).cred" -ForegroundColor Green
 
 # Update Logstash configuration with new secret value
-Write-Host "Updating logstash config file $($sourceFile)..." -ForegroundColor DarkGray
-$sourceFile = './logstash.conf'
+Write-Host "       ┖─ Updating logstash config file $($logstashConfigLocation)..." -ForegroundColor DarkGray
 $Pattern = ' => '
 # Read Logstash config file
-$logstashConfigFile = Get-Content $sourceFile
+$logstashConfigFile = Get-Content $logstashConfigLocation
 # Cleanup and keep only relevant config
 $logstashCleanConfigFile = ($logstashConfigFile | Where-Object { $_ -match $Pattern }).trim() -Replace '"',''
 # Add configuration items to hashtable
@@ -134,11 +165,10 @@ foreach($line in $logstashCleanConfigFile){
 # Replace application secret in Logstash config file
 try {
     $logstashConfigFile = $logstashConfigFile -replace $logstashConfig.client_app_secret, $newSecret.secretText
-    Write-Host "Variable updated" -ForegroundColor Green
-    $logstashConfigfile | Out-File $sourceFile
-    Write-Host "     ✓ Logstash config file $($sourceFile) written." -ForegroundColor Green
+    $logstashConfigFile | Out-File $logstashConfigLocation
+    Write-Host "           ✓ Logstash config file $($logstashConfigLocation) written." -ForegroundColor Green
 } catch {
-    Write-Host "     ✘ There was a problem updating Logstash config file $($sourceFile)." -ForegroundColor Red
+    Write-Host "           ✘ There was a problem updating Logstash config file $($logstashConfigLocation)." -ForegroundColor Red
 }
 
 # Cleanup old secrets
@@ -151,10 +181,11 @@ $params = @{
 $application = Invoke-RestMethod @params -UseBasicParsing
 
 # Remove old application secrets, keep only newest +1
+Write-Host "       ┖─ Looking for outdated secrets that can be cleaned up..." -ForegroundColor DarkGray
 $passwordsToRemove = $application.passwordCredentials | Where-Object -FilterScript { $_.keyId -ne $newSecret.keyId } | Sort-Object -Property startDateTime -Descending | Select-Object -Skip 1
-Write-Host "Found $(@($passwordsToRemove).Count) application secrets to remove"
+Write-Host "           ┖─ Found $(@($passwordsToRemove).Count) application secret(s) to remove" -ForegroundColor DarkGray
 foreach ($passwordToRemove in $passwordsToRemove) {
-    Write-Host "Remove application secret '$($passwordToRemove.keyId)' with start date '$($passwordToRemove.startDateTime)' and end date '$($passwordToRemove.endDateTime)'"
+    Write-Host "           ┖─ Remove application secret '$($passwordToRemove.displayName)' with start date '$($passwordToRemove.startDateTime)' and end date '$($passwordToRemove.endDateTime)'" -ForegroundColor DarkGray
     $body = @{
         "keyId" = $passwordToRemove.keyId
     }
@@ -166,8 +197,13 @@ foreach ($passwordToRemove in $passwordsToRemove) {
     }
     $removedPassword = Invoke-WebRequest @params -UseBasicParsing
     if ($removedPassword.StatusCode -eq 204) {
-        Write-Host "  Removed application secret"
+        Write-Host "               ✓ Removed application secret" -ForegroundColor Green
     } else {
-        Write-Warning "  Failed to remove password with status code $($removedPassword.StatusCode)"
+        Write-Host "               ✘ Failed to remove password with status code $($removedPassword.StatusCode)" -ForegroundColor Orange
     }
 }
+Write-Host ""
+Write-Host "              ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑   " -ForegroundColor Green
+Write-Host "           ━━━┥  🔑 Key rotation successful!  ┝━━━" -ForegroundColor Green
+Write-Host "              ┕━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┙   " -ForegroundColor Green
+Write-Host ""
