@@ -1,6 +1,7 @@
 <#
 .DESCRIPTION
     This script will add the Service Principal of the Application as Owner of the Application.
+    
     It performs the following steps:
     - Login to the graph.microsoft.com
     - Validate the Application Id
@@ -8,20 +9,23 @@
     - Add if applicable the application delegation for graph.microsoft.com/Application.ReadWrite.OwnedBy
     - Perform if applicable the admin consent for the application delegation graph.microsoft.com/Application.ReadWrite.OwnedBy
     - Add if applicable the service principal to the application as owner
+    
     Required permissions:
     - Global Administrator (or the following permissions)
         - Application.ReadWrite.All
         - Directory.Read.All
         - AppRoleAssignment.ReadWrite.All
-.PARAMETER TenantId <String>
+
+    .PARAMETER tenantId <String>
     The tenant id which contains the Azure AD Application.
-.PARAMETER ApplicationId <String>
+    .PARAMETER ApplicationId <String>
     The AppId of the Application which will add itself as it's owner.
 #>
+
 [CmdletBinding()]
 param (
     [Parameter (Mandatory = $true)]
-    [String] $TenantId,
+    [String] $tenantId,
 
     [Parameter (Mandatory = $true)]
     [String] $applicationId
@@ -36,7 +40,7 @@ $clientId = "1950a258-227b-4e31-a9cf-717495945fc2"
 
 $params = @{
     "Method" = "Post"
-    "Uri"    = "$($authority)/$($TenantId)/oauth2/devicecode"
+    "Uri"    = "$($authority)/$($tenantId)/oauth2/devicecode"
     "Body"   = @{
         "client_id"         = $clientId
         "ClientRedirectUri" = "urn:ietf:wg:oauth:2.0:oob"
@@ -57,7 +61,7 @@ Write-Host ""
 Set-Clipboard -Value $request.user_code
 $params = @{
     "Method" = "Post"
-    "Uri"    = "$($authority)/$($TenantId)/oauth2/token"
+    "Uri"    = "$($authority)/$($tenantId)/oauth2/token"
     "body"   = @{
         "grant_type" = "urn:ietf:params:oauth:grant-type:device_code"
         "code"       = $request.device_code
