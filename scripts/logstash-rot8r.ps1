@@ -18,8 +18,8 @@
     Path to logstash pipeline configuration file i.e. '/etc/logstash/conf.d/syslog-to-dcr-based-sentinel.conf'.
     .PARAMETER logstashKeystoreKey [string]
     Name of the key in the keystore container the app secret referenced inside the Logstash configuration file.
-    .PARAMETER hideOutput [boolean]
-    Default is $true. Set to $false for easier troubleshooting external Logstash-specific command like update keystore key and restarting service.
+    .PARAMETER printOutput [switch]
+    Add -printOutput to for easier troubleshooting external Logstash-specific command like update keystore key and restarting service.
 
     If there is a problem updating key value in Logstash' keystore. Please check:
         ● Permissions for running 'logstash-keystore remove/add'
@@ -50,7 +50,7 @@ param (
     [string] $logstashKeystoreKey,
 
     [Parameter (Mandatory = $false)]
-    [boolean] $hideOutput = $true
+    [switch] $printOutput
 
 )
 
@@ -217,13 +217,13 @@ if (!$logstashKeystoreKey) {
 else {
     # Update secret in Logstash Keystore
     Write-Host "       ┖─ Logstash Keystore enabled, removing old key '$($logstashKeystoreKey)'..." -ForegroundColor DarkGray
-    If (!$hideOutput) {
+    If ($printOutput) {
         Invoke-Expression $cmdRemoveKeystoreKey
     } else {
         Invoke-Expression $cmdRemoveKeystoreKey | Out-Null
     }
     Write-Host "       ┖─ Logstash Keystore enabled, adding new key '$($logstashKeystoreKey)'..." -ForegroundColor DarkGray
-    If (!$hideOutput) {
+    If ($printOutput) {
         Invoke-Expression $cmdAddKeystoreKey 
     } else { 
         Invoke-Expression $cmdAddKeystoreKey | Out-Null 
@@ -267,7 +267,7 @@ foreach ($secretToRemove in $passwordsToRemove) {
 Write-Host ""
 Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkYellow
 
-If (!$hideOutput) {
+If ($printOutput) {
     Invoke-Expression $cmdRestartLogstashService
 } else {
     Invoke-Expression $cmdRestartLogstashService | Out-Null
