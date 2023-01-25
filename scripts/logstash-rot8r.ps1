@@ -76,7 +76,6 @@ Write-Host "   #+#    #+#  #+#    #+#     #+#     #+#    #+#  #+#    #+#   " -Fo
 Write-Host "   ###    ###   ########      ###      ########   ###    ###   " -ForegroundColor Magenta
 Write-Host "╙─────────────────────────────────────────────────────────────╜" -ForegroundColor Magenta
 
-
 # Check if Logstash config file can be found
 If (!$logstashKeystoreKey) {
     if (!$logstashConfigLocation) {
@@ -245,7 +244,7 @@ Write-Host "       ┖─ Looking for outdated secrets that can be cleaned up...
 $passwordsToRemove = $application.passwordCredentials | Where-Object -FilterScript { $_.keyId -ne $newSecret.keyId } | Sort-Object -Property startDateTime -Descending | Select-Object -Skip 1
 Write-Host "           ┖─ Found $(@($passwordsToRemove).Count) application secret(s) to remove" -ForegroundColor DarkGray
 foreach ($secretToRemove in $passwordsToRemove) {
-    Write-Host "           ┖─ Remove application secret '$($secretToRemove.displayName)' with start date '$($secretToRemove.startDateTime)' and end date '$($secretToRemove.endDateTime)'" -ForegroundColor DarkGray
+    Write-Host "           ┖─ Remove application secret '$($secretToRemove.displayName)'" -ForegroundColor DarkGray
     $body = @{
         "keyId" = $secretToRemove.keyId
     }
