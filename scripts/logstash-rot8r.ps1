@@ -213,8 +213,7 @@ if (!$logstashKeystoreKey) {
     catch {
         Write-Host "           ✘ There was a problem updating Logstash config file $($logstashConfigLocation)." -ForegroundColor Red
     }
-}
-else {
+} else {
     # Update secret in Logstash Keystore
     Write-Host "       ┖─ Logstash Keystore enabled, removing old key '$($logstashKeystoreKey)'..." -ForegroundColor DarkGray
     If ($printOutput) {
