@@ -266,11 +266,11 @@ foreach ($secretToRemove in $passwordsToRemove) {
 Write-Host ""
 Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkYellow
 
-If ($printOutput) {
-    Invoke-Expression $cmdRestartLogstashService
-} else {
-    Invoke-Expression $cmdRestartLogstashService | Out-Null
-}
+# If ($printOutput) {
+#     Invoke-Expression $cmdRestartLogstashService
+# } else {
+#     Invoke-Expression $cmdRestartLogstashService | Out-Null
+# }
 
 Write-Host ""
 Write-Host "      ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑  " -ForegroundColor Green
