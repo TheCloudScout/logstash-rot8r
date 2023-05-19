@@ -1,5 +1,3 @@
-#!/usr/bin/pwsh
-
 <#
 
     .DESCRIPTION
@@ -37,6 +35,7 @@
 
 [CmdletBinding()]
 param (
+
     [Parameter (Mandatory = $false)]
     [Int32] $secretAddDays = 31,
 
