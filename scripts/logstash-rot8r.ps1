@@ -1,5 +1,8 @@
+#!/usr/bin/pwsh
+
 <#
-.DESCRIPTION
+
+    .DESCRIPTION
     Permission requirements:
     - Azure AD: Application needs to be owner of it's own application.
     - Azure AD: Application requires the application permission Application.ReadWrite.OwnedBy.
