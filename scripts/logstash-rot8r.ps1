@@ -57,8 +57,8 @@ param (
 )
 
 # Variables for running Logstash command outside of this script. Change depending on your scenario Linux/Windows etc.
-$cmdRemoveKeystoreKey       = 'sudo -E /usr/share/logstash/bin/logstash-keystore --path.settings /etc/logstash remove $($logstashKeystoreKey)'
-$cmdAddKeystoreKey          = 'echo $($newSecret.secretText) | sudo -E /usr/share/logstash/bin/logstash-keystore --path.settings /etc/logstash add $($logstashKeystoreKey)'
+$cmdRemoveKeystoreKey       = '/usr/share/logstash/bin/logstash-keystore --path.settings /etc/logstash remove $($logstashKeystoreKey)'
+$cmdAddKeystoreKey          = 'echo $($newSecret.secretText) | /usr/share/logstash/bin/logstash-keystore --path.settings /etc/logstash add $($logstashKeystoreKey)'
 $cmdRestartLogstashService  = 'systemctl restart logstash'
 
 
@@ -268,11 +268,11 @@ foreach ($secretToRemove in $passwordsToRemove) {
 Write-Host ""
 Write-Host "     ◔ Restarting Logstash service... ◕   " -ForegroundColor DarkYellow
 
-# If ($printOutput) {
-#     Invoke-Expression $cmdRestartLogstashService
-# } else {
-#     Invoke-Expression $cmdRestartLogstashService | Out-Null
-# }
+If ($printOutput) {
+    Invoke-Expression $cmdRestartLogstashService
+} else {
+    Invoke-Expression $cmdRestartLogstashService | Out-Null
+}
 
 Write-Host ""
 Write-Host "      ┍━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑  " -ForegroundColor Green
