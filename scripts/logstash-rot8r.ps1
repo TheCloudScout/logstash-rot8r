@@ -85,8 +85,7 @@ If (!$logstashKeystoreKey) {
         Write-Host "   Provide either one and try again." -ForegroundColor Red
         Write-Host ""
         exit
-    }
-    else {
+    } else {
         If (!(Test-Path $logstashConfigLocation)) {
             Write-Host " ✘ Logstash configuration file $($logstashConfigLocation) not found!" -ForegroundColor Red
             Write-Host ""
@@ -100,13 +99,12 @@ If (!(Test-Path "$($applicationId).cred")) {
     # Create a secure .cred file
     Write-Host "No credentials file found for $($applicationId)!" -ForegroundColor Yellow
     # Write-Host "Please create one by entering the a known secret." -ForegroundColor Yellow
-    $credentials = Get-Credential -Message " " -Title "Please create one by entering a known secret." -UserName $applicationId
+    $credentials    = Get-Credential -Message " " -Title "Please create one by entering a known secret." -UserName $applicationId
     $credentials.Password | ConvertFrom-SecureString | Out-File "$($credentials.Username).cred" -Force
-}
-else {
+} else {
     # Read secure .cred file
-    $SecureString = Get-Content "$($applicationId).cred" | ConvertTo-SecureString
-    $credentials = New-Object System.Management.Automation.PSCredential -ArgumentList $applicationId, $SecureString
+    $SecureString   = Get-Content "$($applicationId).cred" | ConvertTo-SecureString
+    $credentials    = New-Object System.Management.Automation.PSCredential -ArgumentList $applicationId, $SecureString
 }
 
 # Sign in to Azure Active Directory
@@ -123,8 +121,7 @@ $params = @{
 }
 try {
     $token = Invoke-RestMethod @params -UseBasicParsing
-}
-catch {
+} catch {
     Write-Host ""
     Write-Host "   ✘ There was a problem signing in to Azure Active Directory!" -ForegroundColor Red
     Write-Host "     Verify credentials, remove $($applicationId).cred file and try again." -ForegroundColor Red
@@ -147,8 +144,7 @@ $params = @{
 }
 try {
     $applications = Invoke-RestMethod @params -UseBasicParsing
-}
-catch {
+} catch {
     Write-Host ""
     Write-Host "        ✘ There was a problem retrieving application with id $($applicationId) in Azure Active Directory!" -ForegroundColor Red
     Write-Host "          Please verify permissions requirements and re-run 'Add-AppOwner.ps1' is necessary." -ForegroundColor Red
@@ -157,8 +153,7 @@ catch {
 }
 if ($applications.value.Count -ne 1) {
     Write-Host "          ✘ No application found with appId '$($applicationId)'" -ForegroundColor Red
-}
-else {
+} else {
     $params = @{
         "Method"  = "Get"
         "Uri"     = "https://graph.microsoft.com/v1.0/applications/$($applications.value[0].id)"
@@ -211,8 +206,7 @@ if (!$logstashKeystoreKey) {
         $logstashConfigFile = $logstashConfigFile -replace $logstashConfig.client_app_secret, $newSecret.secretText
         $logstashConfigFile | Out-File $logstashConfigLocation
         Write-Host "           ✓ Logstash config file $($logstashConfigLocation) written." -ForegroundColor Green
-    }
-    catch {
+    } catch {
         Write-Host "           ✘ There was a problem updating Logstash config file $($logstashConfigLocation)." -ForegroundColor Red
     }
 } else {
@@ -258,8 +252,7 @@ foreach ($secretToRemove in $passwordsToRemove) {
     $removedSecret = Invoke-WebRequest @params -UseBasicParsing
     if ($removedSecret.StatusCode -eq 204) {
         Write-Host "               ✓ Removed application secret" -ForegroundColor Green
-    }
-    else {
+    } else {
         Write-Host "               ✘ Failed to remove password with status code $($removedSecret.StatusCode)" -ForegroundColor Orange
     }
 }
